@@ -199,13 +199,10 @@ handle_info({ssl, SslSocket, Data}, State = #state{in_socket  = SslSocket,
 
 handle_info({ssl_closed, SslSocket}, State = #state{in_socket = SslSocket,
                                                     connection= Connection}) ->
-  error_logger:info_msg("Feedback server disconnected. Waiting ~p millis to connect again...~n",
-                        [Connection#apns_connection.feedback_timeout]),
   _Timer = erlang:send_after(Connection#apns_connection.feedback_timeout, self(), reconnect),
   {noreply, State#state{in_socket = undefined}};
 
 handle_info(reconnect, State = #state{connection = Connection}) ->
-  error_logger:info_msg("Reconnecting the Feedback server...~n"),
   case open_feedback(Connection) of
     {ok, InSocket} -> {noreply, State#state{in_socket = InSocket}};
     {error, Reason} -> {stop, {in_closed, Reason}, State}
@@ -288,8 +285,6 @@ send_payload(Socket, MsgId, Expiry, BinToken, Payload) ->
                 BinToken/binary,
                 PayloadLength:16/big,
                 BinPayload/binary>>],
-    error_logger:info_msg("Sending msg ~p (expires on ~p)~n",
-                         [MsgId, Expiry]),
     ssl:send(Socket, Packet).
 
 hexstr_to_bin(S) ->
